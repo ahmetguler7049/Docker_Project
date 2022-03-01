@@ -1,0 +1,66 @@
+version: "3.8"
+services:
+  postgres_nse_bc:
+    container_name: postgres_nse_bc
+    hostname: postgres_nse_bc
+    image: postgres:latest
+    env_file:
+      - backend/docker_deneme/backend.env
+    networks:
+      - main_nse_bc
+#    restart: unless-stopped
+    ports:
+      - "5437:5432"
+    volumes:
+      - "postgresql-data:/var/lib/postgresql/data"
+    command: -p 5437
+
+  app_nse_bc:
+    container_name: app_nse_bc
+    hostname: app_nse_bc
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        REPO_PATH: ./
+    env_file:
+      - backend/docker_deneme/backend.env
+    environment:
+      - "COMMANDS=1"
+    volumes:
+      - static-data:/srv/app_nse_bc/static
+#      - socket-data:/srv/socket-data
+      - ./backend:/srv/app_nse_bc
+    ports:
+      - "0.0.0.0:8007:8007"
+#    restart: unless-stopped
+    depends_on:
+      - postgres_nse_bc
+    working_dir: /srv/app_nse_bc
+    networks:
+      - main_nse_bc
+
+  app_nse_fr:
+    container_name: app_nse_fr
+    hostname: app_nse_fr
+    restart: always
+    command : npm start
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    stdin_open: true
+    depends_on:
+      - app_nse_bc
+    networks:
+      - main_nse_bc
+
+
+networks:
+  main_nse_bc:
+    driver: bridge
+
+volumes:
+  postgresql-data:
+  static-data:
